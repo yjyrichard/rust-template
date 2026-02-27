@@ -1,0 +1,18 @@
+# Cargo.toml - Rust 项目的核心配置文件，类似于 Node.js 的 package.json
+# 官方文档: https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package]
+# 项目名称，{{project-name}} 是 cargo-generate 的模板变量
+# 使用 `cargo generate` 生成项目时会自动替换为你输入的项目名
+name = "{{project-name}}"
+# 项目版本号，遵循语义化版本 (SemVer): 主版本.次版本.修订号
+version = "0.1.0"
+# Rust 版本 (edition)，决定了可以使用哪些语言特性
+# 可选值: 2015, 2018, 2021, 2024。推荐使用最新的稳定版
+edition = "2021"
+
+[dependencies]
+# 在这里添加项目依赖，格式为:
+# 包名 = "版本号"
+# 例如: serde = "1.0"
+# 或带特性(features): serde = { version = "1.0", features = ["derive"] }

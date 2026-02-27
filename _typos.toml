@@ -1,0 +1,15 @@
+# _typos.toml - typos 拼写检查工具的配置文件
+# typos 会扫描代码中的英文拼写错误，帮助保持代码质量
+# 安装: cargo install typos-cli
+# 使用: 在项目根目录运行 `typos` 即可检查
+
+[default.extend-words]
+# 在这里添加不需要被标记为拼写错误的单词（白名单）
+# 格式: 错误拼写 = "正确拼写" 或 特殊词 = "特殊词"
+# 例如: noo = "noo"  表示 "noo" 不是拼写错误
+
+[files]
+# 排除不需要检查拼写的文件
+# CHANGELOG.md 是自动生成的，不需要检查
+# notebooks/* 是笔记本文件，可能包含特殊内容
+extend-exclude = ["CHANGELOG.md", "notebooks/*"]

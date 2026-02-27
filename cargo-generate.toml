@@ -1,0 +1,5 @@
+# cargo-generate 模板配置文件
+# 当使用 `cargo generate` 从此模板生成新项目时，cargo-generate 会尝试替换所有 {{...}} 语法
+# cliff.toml 中包含 Tera 模板语法（也是 {{...}}），会与 cargo-generate 冲突，因此需要排除
+[template]
+exclude = ["cliff.toml"]

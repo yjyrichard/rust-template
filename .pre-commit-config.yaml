@@ -1,0 +1,77 @@
+# .pre-commit-config.yaml - pre-commit 钩子配置文件
+# pre-commit 会在每次 git commit 之前自动运行这些检查
+# 如果任何检查失败，commit 会被阻止，确保提交的代码质量
+# 安装: pipx install pre-commit && pre-commit install
+# 手动运行: pre-commit run --all-files
+
+fail_fast: false  # 设为 false 表示即使某个钩子失败，也继续运行后续钩子
+repos:
+  # ===== 通用代码检查钩子（非 Rust 特定）=====
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      - id: check-byte-order-marker   # 检查文件是否包含 BOM 标记（不应该有）
+      - id: check-case-conflict        # 检查文件名大小写冲突（Windows/Mac 兼容性）
+      - id: check-merge-conflict       # 检查是否有未解决的 merge 冲突标记
+      - id: check-symlinks             # 检查符号链接是否有效
+      - id: check-yaml                 # 检查 YAML 文件语法是否正确
+      - id: end-of-file-fixer          # 确保文件以换行符结尾
+      - id: mixed-line-ending          # 检查混合换行符（\r\n vs \n）
+      - id: trailing-whitespace        # 删除行尾多余空格
+  # ===== Python 代码格式化（如果项目包含 Python 脚本）=====
+  - repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+      - id: black  # Python 代码格式化工具
+  # ===== Rust 本地钩子 =====
+  - repo: local
+    hooks:
+      # 代码格式化检查：确保代码风格统一
+      - id: cargo-fmt
+        name: cargo fmt
+        description: Format files with rustfmt.
+        entry: bash -c 'cargo fmt -- --check'
+        language: rust
+        files: \.rs$
+        args: []
+      # 依赖安全审计：检查依赖是否有已知漏洞
+      - id: cargo-deny
+        name: cargo deny check
+        description: Check cargo dependencies
+        entry: bash -c 'cargo deny check -d'
+        language: rust
+        files: \.rs$
+        args: []
+      # 拼写检查：检查代码中的英文拼写错误
+      - id: typos
+        name: typos
+        description: check typo
+        entry: bash -c 'typos'
+        language: rust
+        files: \.*$
+        pass_filenames: false
+      # 编译检查：确保代码能通过编译
+      - id: cargo-check
+        name: cargo check
+        description: Check the package for errors.
+        entry: bash -c 'cargo check --all'
+        language: rust
+        files: \.rs$
+        pass_filenames: false
+      # Clippy 静态分析：Rust 官方的 lint 工具，比编译器更严格
+      # -D warnings 表示将所有警告视为错误
+      - id: cargo-clippy
+        name: cargo clippy
+        description: Lint rust sources
+        entry: bash -c 'cargo clippy --all-targets --all-features --tests --benches -- -D warnings'
+        language: rust
+        files: \.rs$
+        pass_filenames: false
+      # 单元测试：使用 nextest 运行所有测试，确保代码功能正确
+      - id: cargo-test
+        name: cargo test
+        description: unit test for the project
+        entry: bash -c 'cargo nextest run --all-features'
+        language: rust
+        files: \.rs$
+        pass_filenames: false

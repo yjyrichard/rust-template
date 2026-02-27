@@ -1,0 +1,74 @@
+# GitHub Actions CI 配置文件
+# 当代码推送到 master 分支或创建 Pull Request 时，自动运行构建和测试
+# 当推送 v* 格式的 tag 时（如 v1.0.0），还会自动创建 GitHub Release
+name: build
+
+# 触发条件
+on:
+  push:
+    branches:
+      - master       # 推送到 master 分支时触发
+    tags:
+      - v*           # 推送 v 开头的 tag 时触发（如 v1.0.0）
+  pull_request:
+    branches:
+      - master       # 向 master 发起 PR 时触发
+
+# 权限设置：允许工作流写入仓库内容（用于创建 Release）
+permissions:
+  contents: write
+
+jobs:
+  build-rust:
+    # 构建矩阵：可以在多个平台上并行测试
+    strategy:
+      matrix:
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      # 第一步：检出代码
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # 获取完整 git 历史（git-cliff 生成 changelog 需要）
+          submodules: recursive    # 递归检出子模块
+      # 第二步：安装 Rust 工具链，包含 llvm-tools（用于代码覆盖率）
+      - name: Install Rust
+        run: rustup toolchain install stable --component llvm-tools-preview
+      # 第三步：安装代码覆盖率工具
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      # 第四步：安装增强测试工具 nextest
+      - name: install nextest
+        uses: taiki-e/install-action@nextest
+      # 第五步：缓存编译产物，加速后续构建
+      - uses: Swatinem/rust-cache@v2
+      # 第六步：检查代码格式（rustfmt）
+      - name: Check code format
+        run: cargo fmt -- --check
+      # 第七步：编译检查，确保代码没有语法错误
+      - name: Check the package for errors
+        run: cargo check --all
+      # 第八步：Clippy 静态分析，捕获潜在问题
+      - name: Lint rust sources
+        run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+      # 第九步：运行所有单元测试
+      - name: Execute rust tests
+        run: cargo nextest run --all-features
+      # 第十步：生成 changelog（仅在推送 tag 时执行）
+      # 使用 git-cliff 根据 conventional commits 自动生成变更日志
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v2
+        id: git-cliff
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          config: cliff.toml
+          args: -vv --latest --strip header
+        env:
+          OUTPUT: CHANGES.md
+      # 第十一步：创建 GitHub Release（仅在推送 tag 时执行）
+      # 将 git-cliff 生成的 changelog 作为 Release 说明
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body: ${{ steps.git-cliff.outputs.content }}
